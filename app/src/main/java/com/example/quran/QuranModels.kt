@@ -19,11 +19,14 @@ data class Surah(
 
 data class Ayah(
     val number: Int,
-    var text: String,        // The Arabic text
+    var text: String,        // The Uthmani Text (Beautiful, for Display)
     val numberInSurah: Int,
-    val page: Int,           // Page 1 to 604
-    val hizbQuarter: Int,    // For your 1/4 Hizb marks
+    val page: Int,
+    val hizbQuarter: Int,
     val juz: Int,
+
+    // Helper fields
     var surahName: String = "",
     var surahNumber: Int = 0,
+    var normalizedText: String = "" // This will now hold the "Clean" text from the new file
 )

@@ -21,13 +21,13 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     var isDndPref by mutableStateOf(prefs.getBoolean("dnd_pref", false))
     var showBookmarksDialog by mutableStateOf(false)
     var bookmarksList by mutableStateOf(emptyList<Bookmark>())
-    
+
     // Tracking general app entry time
     var lastEntryTimestamp by mutableStateOf(prefs.getLong("last_entry_timestamp_display", 0L))
     // Search State
     var searchQuery by mutableStateOf("")
     var searchResults by mutableStateOf(emptyList<Ayah>())
-    
+
     // Tracks if we opened a specific bookmark so we can update it (session mode)
     var activeBookmarkTimestamp by mutableStateOf<Long?>(null)
 
@@ -50,10 +50,10 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         // The display value is what was saved in the previous session
         val lastSaved = prefs.getLong("last_entry_timestamp_internal", 0L)
         lastEntryTimestamp = lastSaved
-        
+
         // Update the display persistent storage so it stays valid for the whole current session
         prefs.edit().putLong("last_entry_timestamp_display", lastSaved).apply()
-        
+
         // Save current time as the "internal" one for the NEXT app launch
         prefs.edit().putLong("last_entry_timestamp_internal", System.currentTimeMillis()).apply()
     }
@@ -139,7 +139,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun saveBookmark(name: String, index: Int) {
         val oldTimestamp = activeBookmarkTimestamp
         val newTimestamp = System.currentTimeMillis()
-        
+
         // Preserve custom name if updating an existing session bookmark
         var finalName = name
         if (oldTimestamp != null) {
@@ -148,14 +148,14 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
                 finalName = existing.surahName
             }
         }
-        
+
         val bm = Bookmark(currentSurah, finalName, index, newTimestamp)
-        
+
         BookmarkHelper.saveOrUpdateBookmark(getApplication(), bm, oldTimestamp)
-        
+
         activeBookmarkTimestamp = newTimestamp
         bookmarksList = BookmarkHelper.getBookmarks(getApplication())
-        
+
         // Also update last read position whenever a bookmark is saved
         saveLastReadPosition(currentSurah, index)
     }
