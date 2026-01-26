@@ -95,7 +95,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun onSearchResultClick(ayah: Ayah) {
         currentSurah = ayah.surahNumber
         loadSurahContent(ayah.surahNumber)
-        targetScrollIndex = ayah.numberInSurah - 1
+        targetScrollIndex = ayah.numberInSurah
         activeBookmarkTimestamp = null
         saveLastReadPosition(ayah.surahNumber, targetScrollIndex)
     }
