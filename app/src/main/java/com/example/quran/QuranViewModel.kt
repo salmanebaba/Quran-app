@@ -95,7 +95,12 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun onSearchResultClick(ayah: Ayah) {
         currentSurah = ayah.surahNumber
         loadSurahContent(ayah.surahNumber)
-        targetScrollIndex = ayah.numberInSurah
+        // Adjust for Bismillah if present (Surahs other than 1 and 9)
+        targetScrollIndex = if (ayah.surahNumber != 1 && ayah.surahNumber != 9) {
+            ayah.numberInSurah
+        } else {
+            ayah.numberInSurah - 1
+        }
         activeBookmarkTimestamp = null
         saveLastReadPosition(ayah.surahNumber, targetScrollIndex)
     }
@@ -160,7 +165,14 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         saveLastReadPosition(currentSurah, index)
     }
 
-    private fun saveLastReadPosition(surah: Int, index: Int) {
+    fun updateLastReadIndex(index: Int) {
+        if (currentSurah != 0) {
+            targetScrollIndex = index
+            saveLastReadPosition(currentSurah, index)
+        }
+    }
+
+    fun saveLastReadPosition(surah: Int, index: Int) {
         prefs.edit()
             .putInt("last_visit_surah", surah)
             .putInt("last_visit_index", index)

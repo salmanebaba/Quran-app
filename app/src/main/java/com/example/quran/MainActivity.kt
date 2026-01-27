@@ -1,10 +1,12 @@
 package com.example.quran
 
+import android.app.Activity
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -34,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -127,6 +128,7 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                         viewModel.saveBookmark(name, index)
                         android.widget.Toast.makeText(context, "Bookmark Updated", android.widget.Toast.LENGTH_SHORT).show()
                     },
+                    onPositionChange = { viewModel.updateLastReadIndex(it) },
                     onBack = { viewModel.exitReading() },
                     onGoHome = { viewModel.goHome() }
                 )
@@ -269,6 +271,7 @@ fun ReadingScreen(
     isDndPreferenceOn: Boolean,
     onSurahChange: (Int) -> Unit,
     onSaveBookmark: (String, Int) -> Unit,
+    onPositionChange: (Int) -> Unit,
     onBack: () -> Unit,
     onGoHome: () -> Unit
 ) {
@@ -276,6 +279,9 @@ fun ReadingScreen(
         onBack()
     }
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialAyahIndex)
+
+    // Keep screen on while reading
+    KeepScreenOnHandler()
 
     // --- Logic Helpers ---
     DndHandler(isDndPreferenceOn) // Handles Lifecycle DND logic
@@ -285,6 +291,11 @@ fun ReadingScreen(
     val layoutInfo by remember { derivedStateOf { listState.layoutInfo } }
     val totalItems by remember { derivedStateOf { layoutInfo.totalItemsCount } }
     val visibleItemsCount by remember { derivedStateOf { layoutInfo.visibleItemsInfo.size } }
+
+    // Save position as user scrolls
+    LaunchedEffect(firstVisibleIndex) {
+        onPositionChange(firstVisibleIndex)
+    }
 
     // Adjust index for Bismillah (if present, it shifts indices by 1)
     val adjustedIndex = if (surahNumber != 1 && surahNumber != 9)
@@ -603,11 +614,24 @@ fun BookmarksDialog(
 // 5. HELPER LOGIC (Clean Code)
 // ==========================================
 
+// --- KEEP SCREEN ON LOGIC ---
+@Composable
+fun KeepScreenOnHandler() {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+}
+
 // --- DND LOGIC ---
 @Composable
 fun DndHandler(isDndOn: Boolean) {
     val context = LocalContext.current
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, isDndOn) {
         val observer = LifecycleEventObserver { _, event ->
