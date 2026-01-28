@@ -20,6 +20,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     var isDataLoaded by mutableStateOf(false)
     var isDndPref by mutableStateOf(prefs.getBoolean("dnd_pref", false))
     var showBookmarksDialog by mutableStateOf(false)
+    var showGoToDialog by mutableStateOf(false)
     var bookmarksList by mutableStateOf(emptyList<Bookmark>())
 
     // Tracking general app entry time
@@ -39,9 +40,6 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadData() {
         viewModelScope.launch {
             QuranRepository.loadQuran(getApplication())
-            while (!QuranRepository.isReady) {
-                delay(100)
-            }
             isDataLoaded = true
         }
     }
@@ -192,5 +190,19 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun goHome() {
         exitReading()
         clearSearch()
+    }
+
+    fun jumpToAyah(surah: Int, ayah: Int) {
+        currentSurah = surah
+        loadSurahContent(surah)
+        // Adjust for Bismillah (index 0 is Bismillah if not 1 or 9)
+        // Ayah 1 -> index 1 if Bismillah, index 0 if not.
+        targetScrollIndex = if (surah != 1 && surah != 9) {
+            ayah // index 1 is Ayah 1
+        } else {
+            ayah - 1 // index 0 is Ayah 1
+        }
+        saveLastReadPosition(surah, targetScrollIndex)
+        showGoToDialog = false
     }
 }

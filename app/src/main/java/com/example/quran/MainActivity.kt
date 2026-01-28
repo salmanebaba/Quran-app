@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
@@ -100,12 +102,22 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
             )
         }
 
+        // --- GO TO DIALOG ---
+        if (viewModel.showGoToDialog) {
+            GoToDialog(
+                surahList = QuranRepository.getSurahList(),
+                onDismiss = { viewModel.showGoToDialog = false },
+                onGo = { surah, ayah -> viewModel.jumpToAyah(surah, ayah) }
+            )
+        }
+
         // --- SCREENS ---
         if (viewModel.currentSurah == 0) {
             HomeScreen(
                 onNew = { viewModel.startNewKhatma() },
                 onContinue = { viewModel.resumeLastPlace() },
                 onOpenBookmarks = { viewModel.openBookmarks() },
+                onOpenGoTo = { viewModel.showGoToDialog = true },
                 isDndEnabled = viewModel.isDndPref,
                 onDndToggle = { viewModel.toggleDnd(it) },
                 searchQuery = viewModel.searchQuery,
@@ -146,6 +158,7 @@ fun HomeScreen(
     onNew: () -> Unit,
     onContinue: () -> Unit,
     onOpenBookmarks: () -> Unit,
+    onOpenGoTo: () -> Unit,
     isDndEnabled: Boolean,
     onDndToggle: (Boolean) -> Unit,
     searchQuery: String,
@@ -242,6 +255,8 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onContinue, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Resume Last Place") }
                 Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onOpenGoTo, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Go to Surah/Ayah") }
+                Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onOpenBookmarks, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Saved Bookmarks") }
 
                 Spacer(modifier = Modifier.height(40.dp))
@@ -278,6 +293,7 @@ fun ReadingScreen(
     BackHandler {
         onBack()
     }
+    val context = LocalContext.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialAyahIndex)
 
     // Keep screen on while reading
@@ -305,6 +321,16 @@ fun ReadingScreen(
     val currentAyah = ayahs.getOrNull(adjustedIndex)
     val surahName = ayahs.firstOrNull()?.surahName ?: ""
     val currentHizbQuarter = currentAyah?.hizbQuarter ?: ayahs.firstOrNull()?.hizbQuarter ?: 0
+
+    // Notification for Hizb Quarter changes
+    var lastHizbQuarter by remember { mutableIntStateOf(currentHizbQuarter) }
+    LaunchedEffect(currentHizbQuarter) {
+        if (currentHizbQuarter != lastHizbQuarter && currentHizbQuarter > 0) {
+            val text = StringUtils.getHizbNotificationText(currentHizbQuarter)
+            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+        }
+        lastHizbQuarter = currentHizbQuarter
+    }
 
     // UI States
     var showMenu by remember { mutableStateOf(false) }
@@ -374,25 +400,10 @@ fun ReadingScreen(
                 contentPadding = PaddingValues(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (surahNumber != 1 && surahNumber != 9) {
-                    item(key = "bismillah") {
-                        Text(
-                            text = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-                            style = TextStyle(fontSize = 30.sp, textAlign = TextAlign.Center),
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-                        )
-                    }
-                }
 
                 items(ayahs, key = { it.number }) { ayah ->
-                    val displayText = if (ayah.numberInSurah == 1 && surahNumber != 1) {
-                        StringUtils.removeBismillahPrefix(ayah.text)
-                    } else {
-                        ayah.text
-                    }
-
                     Text(
-                        text = StringUtils.buildSingleAyahText(displayText, ayah.numberInSurah),
+                        text = StringUtils.buildSingleAyahText(ayah.text, ayah.numberInSurah),
                         style = TextStyle(
                             fontSize = 26.sp,
                             lineHeight = 48.sp,
@@ -489,6 +500,68 @@ fun ReadingTopBar(
             }
         }
     }
+}
+
+@Composable
+fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int, Int) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedSurah by remember { mutableStateOf(surahList.firstOrNull() ?: SurahMetadata(1, "Al-Fatihah", 7)) }
+    var ayahInput by remember { mutableStateOf("1") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Go to Ayah") },
+        text = {
+            Column {
+                Box {
+                    OutlinedTextField(
+                        value = "${selectedSurah.number}. ${selectedSurah.name}",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Select Surah") },
+                        trailingIcon = {
+                            IconButton(onClick = { expanded = true }) {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp)
+                    ) {
+                        surahList.forEach { surah ->
+                            DropdownMenuItem(
+                                text = { Text("${surah.number}. ${surah.name}") },
+                                onClick = {
+                                    selectedSurah = surah
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = ayahInput,
+                    onValueChange = { ayahInput = it.filter { c -> c.isDigit() } },
+                    label = { Text("Ayah Number (1-${selectedSurah.ayahCount})") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val a = ayahInput.toIntOrNull() ?: 1
+                onGo(selectedSurah.number, a.coerceIn(1, selectedSurah.ayahCount))
+            }) { Text("Go") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable
@@ -757,10 +830,17 @@ object StringUtils {
         return if (fraction.isNotEmpty()) " ح $hizb | $fraction" else "$hizb ح"
     }
 
-    fun removeBismillahPrefix(text: String): String {
-        val bismillah = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ"
-        val cleanText = text.replace("\ufeff", "").trim()
-        return if (cleanText.startsWith(bismillah)) cleanText.removePrefix(bismillah).trim() else text
+    fun getHizbNotificationText(quarterIndex: Int): String {
+        if (quarterIndex == 0) return ""
+        val hizb = ((quarterIndex - 1) / 4) + 1
+        val remainder = (quarterIndex - 1) % 4
+        return when (remainder) {
+            0 -> "بداية الحزب $hizb"
+            1 -> "الربع الأول - الحزب $hizb"
+            2 -> "النصف - الحزب $hizb"
+            3 -> "الربع الثالث - الحزب $hizb"
+            else -> ""
+        }
     }
 
     fun buildSingleAyahText(text: String, number: Int) = buildAnnotatedString {
