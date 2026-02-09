@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 import java.io.InputStreamReader
 import java.text.Normalizer
 
-data class SurahMetadata(val number: Int, val name: String, val ayahCount: Int)
+
 
 object QuranRepository {
     // Key = Surah Number (1-114), Value = List of Ayahs

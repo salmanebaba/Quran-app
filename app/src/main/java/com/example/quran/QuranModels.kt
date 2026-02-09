@@ -30,3 +30,5 @@ data class Ayah(
     var surahNumber: Int = 0,
     var normalizedText: String = "" // This will now hold the "Clean" text from the new file
 )
+
+data class SurahMetadata(val number: Int, val name: String, val ayahCount: Int)

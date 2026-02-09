@@ -35,6 +35,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
@@ -336,13 +338,19 @@ fun ReadingScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var isAutoScrolling by remember { mutableStateOf(false) }
-    var scrollSpeed by remember { mutableFloatStateOf(3f) }
+    var scrollSpeed by remember { mutableFloatStateOf(5f) }
+
+    // --- User Interaction Detection ---
+    var isUserTouching by remember { mutableStateOf(false) }
 
     // Auto Scroll Logic
-    LaunchedEffect(isAutoScrolling, scrollSpeed) {
-        while (isAutoScrolling) {
-            listState.scrollBy(scrollSpeed)
-            delay(40)
+    LaunchedEffect(isAutoScrolling, scrollSpeed, isUserTouching) {
+        if (isAutoScrolling && !isUserTouching) {
+            while (true) {
+                // Actual scroll speed is halved as per user request (e.g., 6 becomes 3, 15 becomes 7.5)
+                listState.scrollBy(scrollSpeed / 2f)
+                delay(40)
+            }
         }
     }
 
@@ -394,7 +402,20 @@ fun ReadingScreen(
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                            val anyDown = event.changes.any { it.pressed }
+                            isUserTouching = anyDown
+                        }
+                    }
+                }
+        ) {
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(16.dp),
@@ -571,8 +592,9 @@ fun SpeedControlDialog(currentSpeed: Float, onSpeedChange: (Float) -> Unit, onDi
         title = { Text("Auto Scroll Speed") },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // UI shows integer values (1-15)
                 Text(text = "${currentSpeed.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Text("pixels / tick", fontSize = 12.sp, color = Color.Gray)
+                Text("speed level", fontSize = 12.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
@@ -585,13 +607,13 @@ fun SpeedControlDialog(currentSpeed: Float, onSpeedChange: (Float) -> Unit, onDi
                     Slider(
                         value = currentSpeed,
                         onValueChange = onSpeedChange,
-                        valueRange = 1f..15f,
-                        steps = 14,
+                        valueRange = 1f..10f,
+                        steps = 9,
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
                     )
 
                     OutlinedButton(
-                        onClick = { onSpeedChange((currentSpeed + 1f).coerceAtMost(15f)) },
+                        onClick = { onSpeedChange((currentSpeed + 1f).coerceAtMost(10f)) },
                         shape = CircleShape,
                         modifier = Modifier.size(40.dp),
                         contentPadding = PaddingValues(0.dp)

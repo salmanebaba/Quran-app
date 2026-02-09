@@ -197,11 +197,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         loadSurahContent(surah)
         // Adjust for Bismillah (index 0 is Bismillah if not 1 or 9)
         // Ayah 1 -> index 1 if Bismillah, index 0 if not.
-        targetScrollIndex = if (surah != 1 && surah != 9) {
-            ayah // index 1 is Ayah 1
-        } else {
-            ayah - 1 // index 0 is Ayah 1
-        }
+        targetScrollIndex = ayah - 1
         saveLastReadPosition(surah, targetScrollIndex)
         showGoToDialog = false
     }
