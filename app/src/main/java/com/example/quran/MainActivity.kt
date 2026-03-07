@@ -54,6 +54,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.quran.ui.theme.QuranTheme
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.delay
@@ -64,7 +65,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            QuranApp()
+            QuranTheme {
+                QuranApp()
+            }
         }
     }
 }
@@ -78,11 +81,13 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
     val context = LocalContext.current
 
     if (!viewModel.isDataLoaded) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator()
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Loading Quran...")
+        Surface(modifier = Modifier.fillMaxSize()) {
+            Box(contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("جاري تحميل القرآن...")
+                }
             }
         }
     } else {
@@ -140,7 +145,7 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                     onSurahChange = { viewModel.onSurahChange(it) },
                     onSaveBookmark = { name, index ->
                         viewModel.saveBookmark(name, index)
-                        android.widget.Toast.makeText(context, "Bookmark Updated", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, "تم حفظ العلامة", android.widget.Toast.LENGTH_SHORT).show()
                     },
                     onPositionChange = { viewModel.updateLastReadIndex(it) },
                     onBack = { viewModel.exitReading() },
@@ -172,104 +177,106 @@ fun HomeScreen(
 ) {
     val focusManager = LocalFocusManager.current
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(20.dp))
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
 
-        // General "Last App Entry" Info
-        if (lastEntryTimestamp > 0) {
-            Text(
-                text = "Last Visit: ${StringUtils.formatRelativeTime(lastEntryTimestamp)}",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.End)
-            )
-        }
+            // General "Last App Entry" Info
+            if (lastEntryTimestamp > 0) {
+                Text(
+                    text = "آخر زيارة: ${StringUtils.formatRelativeTime(lastEntryTimestamp)}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    modifier = Modifier.align(Alignment.End)
+                )
+            }
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Text("القرآن الكريم", fontSize = 40.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(20.dp))
+            Text("القرآن الكريم", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("البحت عن آية") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = onClearSearch) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear search")
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("البحث عن آية") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = onClearSearch) {
+                            Icon(Icons.Default.Close, contentDescription = "مسح البحث")
+                        }
                     }
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-            shape = RoundedCornerShape(12.dp),
-            singleLine = true
-        )
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
 
-        if (searchQuery.isNotEmpty()) {
-            // Search Results List
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)
-            ) {
-                items(searchResults, key = { it.number }) { ayah ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onSearchResultClick(ayah) },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = ayah.text,
-                                style = TextStyle(textDirection = TextDirection.Rtl, fontSize = 18.sp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${ayah.surahName} | Ayah ${ayah.numberInSurah}",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
+            if (searchQuery.isNotEmpty()) {
+                // Search Results List
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    items(searchResults, key = { it.number }) { ayah ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onSearchResultClick(ayah) },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = ayah.text,
+                                    style = TextStyle(textDirection = TextDirection.Rtl, fontSize = 18.sp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "${ayah.surahName} | الآية ${ayah.numberInSurah}",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    }
+                    if (searchResults.isEmpty() && searchQuery.length >= 3) {
+                        item {
+                            Text("لا توجد نتائج", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
                     }
                 }
-                if (searchResults.isEmpty() && searchQuery.length >= 3) {
-                    item {
-                        Text("No results found", modifier = Modifier.padding(16.dp), color = Color.Gray)
+            } else {
+                // Main Buttons (only show when not searching)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Button(onClick = onNew, modifier = Modifier.width(220.dp).height(50.dp)) { Text("بدء ختمة جديدة") }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onContinue, modifier = Modifier.width(220.dp).height(50.dp)) { Text("متابعة القراءة") }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onOpenGoTo, modifier = Modifier.width(220.dp).height(50.dp)) { Text("انتقال إلى سورة/آية") }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onOpenBookmarks, modifier = Modifier.width(220.dp).height(50.dp)) { Text("العلامات المرجعية") }
+
+                    Spacer(modifier = Modifier.height(40.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("وضع عدم الإزعاج التلقائي", fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Switch(checked = isDndEnabled, onCheckedChange = onDndToggle)
                     }
-                }
-            }
-        } else {
-            // Main Buttons (only show when not searching)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(onClick = onNew, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Start New Khatma") }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onContinue, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Resume Last Place") }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onOpenGoTo, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Go to Surah/Ayah") }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onOpenBookmarks, modifier = Modifier.width(220.dp).height(50.dp)) { Text("Saved Bookmarks") }
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Auto Do Not Disturb", fontWeight = FontWeight.Medium)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(checked = isDndEnabled, onCheckedChange = onDndToggle)
-                }
-                if (isDndEnabled) {
-                    Text("(Activates while reading)", fontSize = 12.sp, color = Color.Gray)
+                    if (isDndEnabled) {
+                        Text("(يُفعل أثناء القراءة)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                    }
                 }
             }
         }
@@ -347,7 +354,6 @@ fun ReadingScreen(
     LaunchedEffect(isAutoScrolling, scrollSpeed, isUserTouching) {
         if (isAutoScrolling && !isUserTouching) {
             while (true) {
-                // Actual scroll speed is halved as per user request (e.g., 6 becomes 3, 15 becomes 7.5)
                 listState.scrollBy(scrollSpeed / 2f)
                 delay(40)
             }
@@ -383,19 +389,19 @@ fun ReadingScreen(
                     modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Save Bookmark") },
+                        text = { Text("حفظ علامة مرجعية") },
                         onClick = { onSaveBookmark(surahName, firstVisibleIndex); showMenu = false }
                     )
                     DropdownMenuItem(
-                        text = { Text(if (isAutoScrolling) "Stop Scroll" else "Auto Scroll") },
+                        text = { Text(if (isAutoScrolling) "إيقاف التمرير" else "تمرير تلقائي") },
                         onClick = { isAutoScrolling = !isAutoScrolling; showMenu = false }
                     )
                     DropdownMenuItem(
-                        text = { Text("Adjust Speed") },
+                        text = { Text("ضبط السرعة") },
                         onClick = { showSpeedDialog = true; showMenu = false }
                     )
                     DropdownMenuItem(
-                        text = { Text("Go Home") },
+                        text = { Text("الرئيسية") },
                         onClick = { showMenu = false; onGoHome() }
                     )
                 }
@@ -429,7 +435,8 @@ fun ReadingScreen(
                             fontSize = 26.sp,
                             lineHeight = 48.sp,
                             textAlign = TextAlign.Center,
-                            textDirection = TextDirection.Rtl
+                            textDirection = TextDirection.Rtl,
+                            color = MaterialTheme.colorScheme.onBackground
                         ),
                         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
                     )
@@ -440,19 +447,19 @@ fun ReadingScreen(
                         Button(
                             onClick = { onSurahChange(surahNumber + 1) },
                             modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
-                        ) { Text("Next Surah") }
+                        ) { Text("السورة التالية") }
                     }
                 }
             }
 
-            // --- Scroll Indicator Line (Untouchable) ---
+            // --- Scroll Indicator Line ---
             if (totalItems > 0 && visibleItemsCount > 0) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 4.dp, top = 16.dp, bottom = 16.dp)
                         .width(4.dp)
-                        .background(Color.Gray.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
                 ) {
                     val topWeight = firstVisibleIndex.toFloat()
                     val thumbWeight = visibleItemsCount.toFloat()
@@ -485,7 +492,7 @@ fun ReadingTopBar(
     hasNext: Boolean,
     onMenuClick: () -> Unit
 ) {
-    Surface(tonalElevation = 2.dp) {
+    Surface(tonalElevation = 2.dp, color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -495,7 +502,7 @@ fun ReadingTopBar(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -503,20 +510,20 @@ fun ReadingTopBar(
                 Text(
                     text = StringUtils.getHizbArabicText(hizbQuarter),
                     fontSize = 14.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                     fontWeight = FontWeight.Medium
                 )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onPrevSurah, enabled = hasPrev) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Prev", tint = if (hasPrev) MaterialTheme.colorScheme.primary else Color.Gray)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "السابق", tint = if (hasPrev) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f))
                 }
                 IconButton(onClick = onNextSurah, enabled = hasNext) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", tint = if (hasNext) MaterialTheme.colorScheme.primary else Color.Gray)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "التالي", tint = if (hasNext) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f))
                 }
                 IconButton(onClick = onMenuClick) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                    Icon(Icons.Default.MoreVert, contentDescription = "القائمة")
                 }
             }
         }
@@ -531,7 +538,7 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Go to Ayah") },
+        title = { Text("الذهاب إلى آية") },
         text = {
             Column {
                 Box {
@@ -539,7 +546,7 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
                         value = "${selectedSurah.number}. ${selectedSurah.name}",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Select Surah") },
+                        label = { Text("اختر السورة") },
                         trailingIcon = {
                             IconButton(onClick = { expanded = true }) {
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -567,7 +574,7 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
                 OutlinedTextField(
                     value = ayahInput,
                     onValueChange = { ayahInput = it.filter { c -> c.isDigit() } },
-                    label = { Text("Ayah Number (1-${selectedSurah.ayahCount})") },
+                    label = { Text("رقم الآية (1-${selectedSurah.ayahCount})") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -577,10 +584,10 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
             Button(onClick = {
                 val a = ayahInput.toIntOrNull() ?: 1
                 onGo(selectedSurah.number, a.coerceIn(1, selectedSurah.ayahCount))
-            }) { Text("Go") }
+            }) { Text("ذهاب") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text("إلغاء") }
         }
     )
 }
@@ -589,12 +596,11 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
 fun SpeedControlDialog(currentSpeed: Float, onSpeedChange: (Float) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Auto Scroll Speed") },
+        title = { Text("سرعة التمرير التلقائي") },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // UI shows integer values (1-15)
                 Text(text = "${currentSpeed.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Text("speed level", fontSize = 12.sp, color = Color.Gray)
+                Text("مستوى السرعة", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
@@ -607,13 +613,13 @@ fun SpeedControlDialog(currentSpeed: Float, onSpeedChange: (Float) -> Unit, onDi
                     Slider(
                         value = currentSpeed,
                         onValueChange = onSpeedChange,
-                        valueRange = 1f..10f,
-                        steps = 9,
+                        valueRange = 1f..15f,
+                        steps = 14,
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
                     )
 
                     OutlinedButton(
-                        onClick = { onSpeedChange((currentSpeed + 1f).coerceAtMost(10f)) },
+                        onClick = { onSpeedChange((currentSpeed + 1f).coerceAtMost(15f)) },
                         shape = CircleShape,
                         modifier = Modifier.size(40.dp),
                         contentPadding = PaddingValues(0.dp)
@@ -621,7 +627,7 @@ fun SpeedControlDialog(currentSpeed: Float, onSpeedChange: (Float) -> Unit, onDi
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("تم") } }
     )
 }
 
@@ -640,12 +646,12 @@ fun BookmarksDialog(
     if (bookmarkToRename != null) {
         AlertDialog(
             onDismissRequest = { bookmarkToRename = null },
-            title = { Text("Rename Bookmark") },
+            title = { Text("إعادة تسمية العلامة") },
             text = {
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
-                    label = { Text("New Name") },
+                    label = { Text("الاسم الجديد") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -654,17 +660,17 @@ fun BookmarksDialog(
                 TextButton(onClick = {
                     bookmarkToRename?.let { onRename(it, newName) }
                     bookmarkToRename = null
-                }) { Text("Save") }
+                }) { Text("حفظ") }
             },
             dismissButton = {
-                TextButton(onClick = { bookmarkToRename = null }) { Text("Cancel") }
+                TextButton(onClick = { bookmarkToRename = null }) { Text("إلغاء") }
             }
         )
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Saved Bookmarks") },
+        title = { Text("العلامات المرجعية") },
         text = {
             LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
                 items(bookmarks, key = { it.timestamp }) { bookmark ->
@@ -679,9 +685,9 @@ fun BookmarksDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(bookmark.surahName, fontWeight = FontWeight.Bold)
                             Text(
-                                "Ayah ${bookmark.ayahIndex + 1} • ${dateFormat.format(Date(bookmark.timestamp))}",
+                                "الآية ${bookmark.ayahIndex + 1} • ${dateFormat.format(Date(bookmark.timestamp))}",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         }
                         Row {
@@ -689,19 +695,19 @@ fun BookmarksDialog(
                                 bookmarkToRename = bookmark
                                 newName = bookmark.surahName
                             }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Rename", tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+                                Icon(Icons.Default.Edit, contentDescription = "تعديل", tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                             }
                             IconButton(onClick = { onDelete(bookmark) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.6f))
+                                Icon(Icons.Default.Delete, contentDescription = "حذف", tint = Color.Red.copy(alpha = 0.6f))
                             }
                         }
                     }
                     HorizontalDivider()
                 }
-                if (bookmarks.isEmpty()) item { Text("No bookmarks yet.") }
+                if (bookmarks.isEmpty()) item { Text("لا توجد علامات مرجعية بعد.") }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("إغلاق") } }
     )
 }
 
@@ -761,8 +767,6 @@ object DndHelper {
     fun enableDnd(context: Context) {
         if (isPermissionGranted(context)) {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            // Use INTERRUPTION_FILTER_PRIORITY instead of NONE to avoid "Total Silence" which can sometimes
-            // cause issues with system alarms or be perceived as "crashing" the audio/system behavior.
             nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
         }
     }
@@ -832,10 +836,10 @@ object StringUtils {
         val days = hours / 24
 
         return when {
-            days > 0 -> "$days day${if (days > 1) "s" else ""} ago"
-            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} ago"
-            minutes > 0 -> "$minutes minute${if (minutes > 1) "s" else ""} ago"
-            else -> "Just now"
+            days > 0 -> "$days يوم مضى"
+            hours > 0 -> "$hours ساعة مضت"
+            minutes > 0 -> "$minutes دقيقة مضت"
+            else -> "الآن"
         }
     }
 
