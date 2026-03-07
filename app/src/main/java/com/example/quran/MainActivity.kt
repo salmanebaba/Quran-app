@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -47,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,6 +82,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QuranApp(viewModel: QuranViewModel = viewModel()) {
     val context = LocalContext.current
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     if (!viewModel.isDataLoaded) {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -91,6 +95,11 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
             }
         }
     } else {
+        // --- ABOUT DIALOG ---
+        if (showAboutDialog) {
+            AboutDialog(onDismiss = { showAboutDialog = false })
+        }
+
         // --- BOOKMARKS POPUP ---
         if (viewModel.showBookmarksDialog) {
             BookmarksDialog(
@@ -125,6 +134,7 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                 onContinue = { viewModel.resumeLastPlace() },
                 onOpenBookmarks = { viewModel.openBookmarks() },
                 onOpenGoTo = { viewModel.showGoToDialog = true },
+                onOpenAbout = { showAboutDialog = true },
                 isDndEnabled = viewModel.isDndPref,
                 onDndToggle = { viewModel.toggleDnd(it) },
                 searchQuery = viewModel.searchQuery,
@@ -166,6 +176,7 @@ fun HomeScreen(
     onContinue: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenGoTo: () -> Unit,
+    onOpenAbout: () -> Unit,
     isDndEnabled: Boolean,
     onDndToggle: (Boolean) -> Unit,
     searchQuery: String,
@@ -185,14 +196,25 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            // General "Last App Entry" Info
-            if (lastEntryTimestamp > 0) {
-                Text(
-                    text = "آخر زيارة: ${StringUtils.formatRelativeTime(lastEntryTimestamp)}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    modifier = Modifier.align(Alignment.End)
-                )
+            // Info bar with "Last Visit" and "About"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                TextButton(onClick = onOpenAbout) {
+                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("حول التطبيق", fontSize = 12.sp)
+                }
+
+                if (lastEntryTimestamp > 0) {
+                    Text(
+                        text = "آخر زيارة: ${StringUtils.formatRelativeTime(lastEntryTimestamp)}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -345,7 +367,7 @@ fun ReadingScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var isAutoScrolling by remember { mutableStateOf(false) }
-    var scrollSpeed by remember { mutableFloatStateOf(5f) }
+    var scrollSpeed by remember { mutableFloatStateOf(6f) }
 
     // --- User Interaction Detection ---
     var isUserTouching by remember { mutableStateOf(false) }
@@ -528,6 +550,63 @@ fun ReadingTopBar(
             }
         }
     }
+}
+
+@Composable
+fun AboutDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val uriHandler = remember { { url: String ->
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(intent)
+    } }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("حول التطبيق") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "تطبيق القرآن الكريم بسيط ومفتوح المصدر، يهدف لتوفير تجربة قراءة مريحة مع ميزات التمرير التلقائي والعلامات المرجعية",
+                    textAlign = TextAlign.Center,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Salmane Baba : المطور ", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "salmanebaba@outlook.com",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { 
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:salmanebaba@outlook.com")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Text(
+                        text = "GitHub",
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier.clickable { uriHandler("https://github.com/salmanebaba") }
+                    )
+                    Text(
+                        text = "LinkedIn",
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier.clickable { uriHandler("https://linkedin.com/in/salmanebaba") }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("إغلاق") }
+        }
+    )
 }
 
 @Composable
