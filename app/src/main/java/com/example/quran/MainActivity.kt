@@ -90,7 +90,7 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("جاري تحميل القرآن...")
+                    Text("جارٍ تحميل القرآن")
                 }
             }
         }
