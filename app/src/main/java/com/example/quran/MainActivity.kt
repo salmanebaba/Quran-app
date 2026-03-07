@@ -367,7 +367,7 @@ fun ReadingScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var isAutoScrolling by remember { mutableStateOf(false) }
-    var scrollSpeed by remember { mutableFloatStateOf(6f) }
+    var scrollSpeed by remember { mutableFloatStateOf(5f) }
 
     // --- User Interaction Detection ---
     var isUserTouching by remember { mutableStateOf(false) }
