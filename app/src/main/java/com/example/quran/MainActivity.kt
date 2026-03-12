@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -152,6 +153,8 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                     ayahs = viewModel.currentAyahs,
                     initialAyahIndex = viewModel.targetScrollIndex,
                     isDndPreferenceOn = viewModel.isDndPref,
+                    scrollSpeed = viewModel.scrollSpeed,
+                    onSpeedChange = { viewModel.updateScrollSpeed(it) },
                     onSurahChange = { viewModel.onSurahChange(it) },
                     onSaveBookmark = { name, index ->
                         viewModel.saveBookmark(name, index)
@@ -315,16 +318,27 @@ fun ReadingScreen(
     ayahs: List<Ayah>,
     initialAyahIndex: Int,
     isDndPreferenceOn: Boolean,
+    scrollSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
     onSurahChange: (Int) -> Unit,
     onSaveBookmark: (String, Int) -> Unit,
     onPositionChange: (Int) -> Unit,
     onBack: () -> Unit,
     onGoHome: () -> Unit
 ) {
-    BackHandler {
-        onBack()
-    }
+    var lastBackPressTime by remember { mutableLongStateOf(0L) }
     val context = LocalContext.current
+
+    BackHandler {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastBackPressTime < 2000) {
+            onBack()
+        } else {
+            lastBackPressTime = currentTime
+            Toast.makeText(context, "اضغط مرة أخرى للرجوع", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialAyahIndex)
 
     // Keep screen on while reading
@@ -367,7 +381,6 @@ fun ReadingScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var isAutoScrolling by remember { mutableStateOf(false) }
-    var scrollSpeed by remember { mutableFloatStateOf(5f) }
 
     // --- User Interaction Detection ---
     var isUserTouching by remember { mutableStateOf(false) }
@@ -386,7 +399,7 @@ fun ReadingScreen(
     if (showSpeedDialog) {
         SpeedControlDialog(
             currentSpeed = scrollSpeed,
-            onSpeedChange = { scrollSpeed = it },
+            onSpeedChange = onSpeedChange,
             onDismiss = { showSpeedDialog = false }
         )
     }
@@ -396,7 +409,15 @@ fun ReadingScreen(
             ReadingTopBar(
                 surahName = surahName,
                 hizbQuarter = currentHizbQuarter,
-                onBack = onBack,
+                onBack = {
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastBackPressTime < 2000) {
+                        onBack()
+                    } else {
+                        lastBackPressTime = currentTime
+                        Toast.makeText(context, "اضغط مرة أخرى للرجوع", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 onPrevSurah = { if (surahNumber > 1) onSurahChange(surahNumber - 1) },
                 onNextSurah = { if (surahNumber < 114) onSurahChange(surahNumber + 1) },
                 hasPrev = surahNumber > 1,
@@ -786,7 +807,7 @@ fun BookmarksDialog(
                 if (bookmarks.isEmpty()) item { Text("لا توجد علامات مرجعية بعد.") }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("إغلاق") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("إإغلاق") } }
     )
 }
 

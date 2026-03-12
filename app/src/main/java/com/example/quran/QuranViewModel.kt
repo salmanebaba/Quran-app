@@ -23,6 +23,9 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     var showGoToDialog by mutableStateOf(false)
     var bookmarksList by mutableStateOf(emptyList<Bookmark>())
 
+    // Auto Scroll Speed state
+    var scrollSpeed by mutableStateOf(prefs.getFloat("scroll_speed", 5f))
+
     // Tracking general app entry time
     var lastEntryTimestamp by mutableStateOf(prefs.getLong("last_entry_timestamp_display", 0L))
     // Search State
@@ -200,5 +203,10 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         targetScrollIndex = ayah - 1
         saveLastReadPosition(surah, targetScrollIndex)
         showGoToDialog = false
+    }
+
+    fun updateScrollSpeed(newSpeed: Float) {
+        scrollSpeed = newSpeed
+        prefs.edit().putFloat("scroll_speed", newSpeed).apply()
     }
 }
