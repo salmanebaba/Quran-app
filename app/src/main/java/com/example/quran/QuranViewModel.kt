@@ -155,7 +155,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        val bm = Bookmark(currentSurah, finalName, index, newTimestamp)
+        val bm = Bookmark(finalName,currentSurah, index, timestamp = newTimestamp)
 
         BookmarkHelper.saveOrUpdateBookmark(getApplication(), bm, oldTimestamp)
 

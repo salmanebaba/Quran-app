@@ -18,17 +18,23 @@ data class Surah(
 )
 
 data class Ayah(
-    val number: Int,
-    var text: String,        // The Uthmani Text (Beautiful, for Display)
-    val numberInSurah: Int,
-    val page: Int,
-    val hizbQuarter: Int,
-    val juz: Int,
+    @SerializedName("number") val number: Int,
+    @SerializedName("text") var text: String,
+    @SerializedName("numberInSurah") val numberInSurah: Int,
+    @SerializedName("page") val page: Int,
+    @SerializedName("hizbQuarter") val hizbQuarter: Int,
+    @SerializedName("juz") val juz: Int,
 
-    // Helper fields
-    var surahName: String = "",
-    var surahNumber: Int = 0,
-    var normalizedText: String = "" // This will now hold the "Clean" text from the new file
+    // Add these so they don't get lost in Signed APK
+    @SerializedName("surahName") var surahName: String = "",
+    @SerializedName("surahNumber") var surahNumber: Int = 0,
+    @SerializedName("normalizedText") var normalizedText: String = ""
 )
 
 data class SurahMetadata(val number: Int, val name: String, val ayahCount: Int)
+
+data class Bookmark(
+    @SerializedName("surahName") val surahName: String, @SerializedName("surahNumber") val surahNumber: Int,
+    @SerializedName("ayahIndex") val ayahIndex: Int,
+    @SerializedName("timestamp") val timestamp: Long
+)

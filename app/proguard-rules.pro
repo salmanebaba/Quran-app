@@ -10,6 +10,8 @@
 -keep class com.example.quran.Ayah { *; }
 -keep class com.example.quran.SurahMetadata { *; }
 -keep class com.example.quran.Bookmark { *; }
+-keep class com.example.quran.** { *; }
+-keepclassmembers class com.example.quran.** { <fields>; <init>(...); }
 
 # If you have other models, add them here
 -keepclassmembers class * {

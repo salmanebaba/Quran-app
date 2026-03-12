@@ -879,9 +879,6 @@ object DndHelper {
     }
 }
 
-// --- BOOKMARK LOGIC ---
-data class Bookmark(val surahNumber: Int, var surahName: String, val ayahIndex: Int, val timestamp: Long)
-
 object BookmarkHelper {
     fun saveOrUpdateBookmark(context: Context, bookmark: Bookmark, oldTimestamp: Long?) {
         val prefs = context.getSharedPreferences("SimpleQuranData", Context.MODE_PRIVATE)
