@@ -807,7 +807,7 @@ fun BookmarksDialog(
                 if (bookmarks.isEmpty()) item { Text("لا توجد علامات مرجعية بعد.") }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("إإغلاق") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("إغلاق") } }
     )
 }
 
