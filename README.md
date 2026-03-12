@@ -36,4 +36,14 @@
 
 ## الترخيص (License)
 
-هذا المشروع متاح تحت ترخيص مفتوح المصدر.
+.هذا المشروع متاح تحت ترخيص مفتوح المصدر
+
+
+<img width="400" height="793" alt="home" src="https://github.com/user-attachments/assets/3daba414-d5be-44a6-b3bd-0eb9fee576e5" />
+<img width="400" height="793" alt="reading_page" src="https://github.com/user-attachments/assets/915092d4-adb0-4853-8a79-a4296dcfd584" />
+<img width="400" height="793" alt="options" src="https://github.com/user-attachments/assets/5c0aa8e9-fc3b-4175-9ed2-bdf026cd50bc" />
+<img width="400" height="793" alt="bookmarks" src="https://github.com/user-attachments/assets/44f61b4d-5a38-4346-a08b-4c83c0b1ef06" />
+<img width="400" height="793" alt="go" src="https://github.com/user-attachments/assets/7413900d-06b1-4e18-b334-f5c574a24a01" />
+<img width="400" height="793" alt="search" src="https://github.com/user-attachments/assets/e7711af1-ebf0-41c8-8a2e-86caa418679f" />
+
+
