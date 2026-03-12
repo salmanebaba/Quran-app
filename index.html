@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>القرآن الكريم - Quran App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #004D40;
+            --secondary-gold: #C49102;
+            --soft-cream: #FDF5E6;
+            --dark-charcoal: #212121;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Amiri', serif;
+            background-color: var(--soft-cream);
+            color: var(--dark-charcoal);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-green);
+            color: var(--white);
+            padding: 4rem 2rem;
+            text-align: center;
+            border-bottom: 5px solid var(--secondary-gold);
+        }
+
+        header h1 {
+            font-family: 'Aref Ruqaa', serif;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        header p {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-right: 5px solid var(--secondary-gold);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card h3 {
+            color: var(--primary-green);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .download-section {
+            text-align: center;
+            background-color: var(--primary-green);
+            color: var(--white);
+            padding: 4rem 2rem;
+            border-radius: 20px;
+            margin-bottom: 4rem;
+        }
+
+        .download-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--secondary-gold);
+            color: var(--white);
+            padding: 1rem 3rem;
+            text-decoration: none;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: background 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            background-color: #a37a02;
+            transform: scale(1.05);
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .contact-info {
+            margin-top: 1rem;
+        }
+
+        .contact-info a {
+            color: var(--primary-green);
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: bold;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.2rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 { font-size: 2.5rem; }
+            .download-section h2 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>القرآن الكريم</h1>
+        <p>تجربة قراءة إيمانية هادئة ومتميزة</p>
+        <div class="version-badge" id="version-display">جارٍ تحميل الإصدار...</div>
+    </header>
+
+    <div class="container">
+        <section class="features">
+            <div class="feature-card">
+                <h3>تصميم المصحف الشريف</h3>
+                <p>واجهة مستوحاة من ألوان المصحف التقليدية مع ورق كريمي مريح للعين للقراءة الطويلة.</p>
+            </div>
+            <div class="feature-card">
+                <h3>التمرير التلقائي الذكي</h3>
+                <p>اقرأ دون الحاجة للمس الشاشة مع ميزة التمرير التلقائي القابلة لضبط السرعة بدقة.</p>
+            </div>
+            <div class="feature-card">
+                <h3>نظام العلامات المرجعية</h3>
+                <p>احفظ مكان توقفك في كل سورة وعد إليها بضغطة زر واحدة في أي وقت.</p>
+            </div>
+            <div class="feature-card">
+                <h3>البحث والانتقال السريع</h3>
+                <p>ابحث عن أي آية أو انتقل مباشرة إلى السورة والجزء الذي تريده بكل سهولة.</p>
+            </div>
+        </section>
+
+        <section class="download-section">
+            <h2>جاهز للقراءة؟</h2>
+            <p style="margin-bottom: 2rem;">قم بتحميل التطبيق الآن وابدأ ختمتك الجديدة</p>
+            <a href="https://github.com/salmanebaba/Quran-app/releases/latest" class="btn" id="download-btn">تحميل APK</a>
+        </section>
+
+        <footer>
+            <p>تم تطوير التطبيق بواسطة <strong>Salmane Baba</strong></p>
+            <div class="contact-info">
+                <a href="mailto:salmanebaba@outlook.com">البريد الإلكتروني</a> |
+                <a href="https://github.com/salmanebaba" target="_blank">GitHub</a> |
+                <a href="https://linkedin.com/in/salmanebaba" target="_blank">LinkedIn</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Optional: Fetch latest release version from GitHub
+        async function fetchLatestVersion() {
+            try {
+                const response = await fetch('https://api.github.com/repos/salmanebaba/Quran-app/releases/latest');
+                const data = await response.json();
+                if (data.tag_name) {
+                    document.getElementById('version-display').innerText = 'الإصدار الأخير: ' + data.tag_name;
+                }
+            } catch (e) {
+                document.getElementById('version-display').innerText = 'الإصدار: v1.0.0';
+            }
+        }
+        fetchLatestVersion();
+    </script>
+</body>
+</html>
