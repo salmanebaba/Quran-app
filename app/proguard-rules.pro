@@ -1,21 +1,17 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Gson rules
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.gson.** { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep your data models! 
+# This is likely why reading is empty in the build
+-keep class com.example.quran.QuranResponse { *; }
+-keep class com.example.quran.QuranDataWrapper { *; }
+-keep class com.example.quran.Surah { *; }
+-keep class com.example.quran.Ayah { *; }
+-keep class com.example.quran.SurahMetadata { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# If you have other models, add them here
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
