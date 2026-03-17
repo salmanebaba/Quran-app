@@ -1,4 +1,4 @@
-package com.example.quran
+package com.salmane.quran
 
 import android.app.Application
 import android.content.Context
@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class QuranViewModel(application: Application) : AndroidViewModel(application) {

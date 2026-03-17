@@ -1,19 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
+
 android {
-    namespace = "com.example.quran"
+    namespace = "com.salmane.quran"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.quran"
+        applicationId = "com.salmane.quran"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -24,18 +27,25 @@ android {
         }
     }
 
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
+    }
+
     signingConfigs {
         create("release") {
-            storeFile = file("release.keystore")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file(localProperties["KEYSTORE_PATH"] as String? ?: "release.keystore")
+            storePassword = localProperties["KEYSTORE_PASSWORD"] as String?
+            keyAlias = localProperties["KEY_ALIAS"] as String?
+            keyPassword = localProperties["KEY_PASSWORD"] as String?
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

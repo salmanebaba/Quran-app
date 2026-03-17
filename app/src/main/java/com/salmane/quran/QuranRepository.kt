@@ -1,12 +1,10 @@
-package com.example.quran
+package com.salmane.quran
 
 import android.content.Context
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStreamReader
-import java.text.Normalizer
-
 
 
 object QuranRepository {

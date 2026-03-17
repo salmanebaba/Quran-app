@@ -1,4 +1,4 @@
-package com.example.quran.ui.theme
+package com.salmane.quran.ui.theme
 
 import android.app.Activity
 import androidx.compose.material3.MaterialTheme

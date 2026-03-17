@@ -1,4 +1,4 @@
-package com.example.quran
+package com.salmane.quran
 
 import org.junit.Test
 

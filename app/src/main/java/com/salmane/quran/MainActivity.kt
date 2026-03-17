@@ -1,4 +1,4 @@
-package com.example.quran
+package com.salmane.quran
 
 import android.app.Activity
 import android.app.NotificationManager
@@ -58,7 +58,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.quran.ui.theme.QuranTheme
+import com.salmane.quran.ui.theme.QuranTheme
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.delay
