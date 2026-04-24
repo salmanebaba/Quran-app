@@ -1,4 +1,4 @@
-package com.salmane.quran
+package com.salmanebaba.quran
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

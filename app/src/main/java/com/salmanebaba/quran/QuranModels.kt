@@ -1,4 +1,4 @@
-package com.salmane.quran
+package com.salmanebaba.quran
 
 import com.google.gson.annotations.SerializedName
 

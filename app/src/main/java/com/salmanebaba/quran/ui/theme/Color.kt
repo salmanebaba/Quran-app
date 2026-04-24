@@ -1,4 +1,4 @@
-package com.salmane.quran.ui.theme
+package com.salmanebaba.quran.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
