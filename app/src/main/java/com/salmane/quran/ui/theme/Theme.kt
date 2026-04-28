@@ -1,7 +1,9 @@
-package com.salmanebaba.quran.ui.theme
+package com.salmane.quran.ui.theme
 
 import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -21,19 +23,29 @@ private val LightColorScheme = lightColorScheme(
     onSurface = DarkCharcoal
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = PrimaryGreen,
+    onPrimary = Color.White,
+    secondary = SecondaryGold,
+    onSecondary = Color.Black,
+    background = Color(0xFF121212),
+    surface = Color(0xFF1E1E1E),
+    onBackground = Color(0xFFE1E1E1),
+    onSurface = Color(0xFFE1E1E1)
+)
+
 @Composable
 fun QuranTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val view = LocalView.current
 
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Use PrimaryGreen for the status bar
             window.statusBarColor = colorScheme.primary.toArgb()
-            // Since the status bar is dark green, use light icons (false)
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }

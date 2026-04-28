@@ -8,15 +8,15 @@ plugins {
 
 
 android {
-    namespace = "com.salmanebaba.quran"
+    namespace = "com.salmane.quran"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.salmanebaba.quran"
+        applicationId = "com.salmane.quran"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +47,9 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

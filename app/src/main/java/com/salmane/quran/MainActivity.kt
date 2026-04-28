@@ -1,4 +1,4 @@
-package com.salmanebaba.quran
+package com.salmane.quran
 
 import android.app.Activity
 import android.app.NotificationManager
@@ -10,10 +10,12 @@ import android.provider.Settings
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,9 +32,9 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,7 +60,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.salmanebaba.quran.ui.theme.QuranTheme
+import com.salmane.quran.ui.theme.QuranTheme
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.delay
@@ -68,9 +70,11 @@ import java.util.*
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            QuranTheme {
-                QuranApp()
+            val viewModel: QuranViewModel = viewModel()
+            QuranTheme(darkTheme = viewModel.isDarkMode) {
+                QuranApp(viewModel)
             }
         }
     }
@@ -81,9 +85,8 @@ class MainActivity : ComponentActivity() {
 // ==========================================
 
 @Composable
-fun QuranApp(viewModel: QuranViewModel = viewModel()) {
+fun QuranApp(viewModel: QuranViewModel) {
     val context = LocalContext.current
-    var showAboutDialog by remember { mutableStateOf(false) }
 
     if (!viewModel.isDataLoaded) {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -91,14 +94,22 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("جارٍ تحميل القرآن")
+                    Text("جارٍ تحميل القرآن…")
                 }
             }
         }
     } else {
-        // --- ABOUT DIALOG ---
-        if (showAboutDialog) {
-            AboutDialog(onDismiss = { showAboutDialog = false })
+        // --- SETTINGS DIALOG ---
+        if (viewModel.showSettingsDialog) {
+            SettingsDialog(
+                isDarkMode = viewModel.isDarkMode,
+                onDarkModeToggle = { viewModel.toggleDarkMode(it) },
+                fontSize = viewModel.fontSize,
+                onFontSizeChange = { viewModel.updateFontSize(it) },
+                isEnglish = viewModel.isEnglish,
+                onLanguageToggle = { viewModel.toggleLanguage(it) },
+                onDismiss = { viewModel.showSettingsDialog = false }
+            )
         }
 
         // --- BOOKMARKS POPUP ---
@@ -115,7 +126,8 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                 },
                 onRename = { bookmark, newName ->
                     viewModel.renameBookmark(bookmark, newName)
-                }
+                },
+                isEnglish = viewModel.isEnglish
             )
         }
 
@@ -124,7 +136,8 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
             GoToDialog(
                 surahList = QuranRepository.getSurahList(),
                 onDismiss = { viewModel.showGoToDialog = false },
-                onGo = { surah, ayah -> viewModel.jumpToAyah(surah, ayah) }
+                onGo = { surah, ayah -> viewModel.jumpToAyah(surah, ayah) },
+                isEnglish = viewModel.isEnglish
             )
         }
 
@@ -135,7 +148,7 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                 onContinue = { viewModel.resumeLastPlace() },
                 onOpenBookmarks = { viewModel.openBookmarks() },
                 onOpenGoTo = { viewModel.showGoToDialog = true },
-                onOpenAbout = { showAboutDialog = true },
+                onOpenSettings = { viewModel.showSettingsDialog = true },
                 isDndEnabled = viewModel.isDndPref,
                 onDndToggle = { viewModel.toggleDnd(it) },
                 searchQuery = viewModel.searchQuery,
@@ -143,7 +156,8 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                 searchResults = viewModel.searchResults,
                 onSearchResultClick = { viewModel.onSearchResultClick(it) },
                 onClearSearch = { viewModel.clearSearch() },
-                lastEntryTimestamp = viewModel.lastEntryTimestamp
+                lastEntryTimestamp = viewModel.lastEntryTimestamp,
+                isEnglish = viewModel.isEnglish
             )
         } else {
             // key(currentSurah) forces a refresh when Surah changes, preventing scroll issues
@@ -154,11 +168,13 @@ fun QuranApp(viewModel: QuranViewModel = viewModel()) {
                     initialAyahIndex = viewModel.targetScrollIndex,
                     isDndPreferenceOn = viewModel.isDndPref,
                     scrollSpeed = viewModel.scrollSpeed,
+                    fontSize = viewModel.fontSize,
+                    isEnglish = viewModel.isEnglish,
                     onSpeedChange = { viewModel.updateScrollSpeed(it) },
                     onSurahChange = { viewModel.onSurahChange(it) },
                     onSaveBookmark = { name, index ->
                         viewModel.saveBookmark(name, index)
-                        android.widget.Toast.makeText(context, "تم حفظ العلامة", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (viewModel.isEnglish) "Bookmark saved" else "تم حفظ العلامة", Toast.LENGTH_SHORT).show()
                     },
                     onPositionChange = { viewModel.updateLastReadIndex(it) },
                     onBack = { viewModel.exitReading() },
@@ -179,7 +195,7 @@ fun HomeScreen(
     onContinue: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenGoTo: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
     isDndEnabled: Boolean,
     onDndToggle: (Boolean) -> Unit,
     searchQuery: String,
@@ -187,33 +203,40 @@ fun HomeScreen(
     searchResults: List<Ayah>,
     onSearchResultClick: (Ayah) -> Unit,
     onClearSearch: () -> Unit,
-    lastEntryTimestamp: Long
+    lastEntryTimestamp: Long,
+    isEnglish: Boolean
 ) {
     val focusManager = LocalFocusManager.current
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Info bar with "Last Visit" and "About"
+            // Info bar with "Last Visit" and "Settings"
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                TextButton(onClick = onOpenAbout) {
-                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
+                TextButton(onClick = onOpenSettings) {
+                    Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("حول التطبيق", fontSize = 12.sp)
+                    Text(if (isEnglish) "Settings" else "الإعدادات", fontSize = 12.sp)
                 }
 
                 if (lastEntryTimestamp > 0) {
                     Text(
-                        text = "آخر زيارة: ${StringUtils.formatRelativeTime(lastEntryTimestamp)}",
+                        text = if (isEnglish)
+                            "Last visit: ${StringUtils.formatRelativeTimeEn(lastEntryTimestamp)}"
+                        else
+                            "آخر زيارة: ${StringUtils.formatRelativeTime(lastEntryTimestamp)}",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
@@ -221,7 +244,7 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-            Text("القرآن الكريم", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(if (isEnglish) "The Holy Quran" else "القرآن الكريم", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -231,12 +254,12 @@ fun HomeScreen(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("البحث عن آية") },
+                placeholder = { Text(if (isEnglish) "Search for a verse" else "البحث عن آية") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = onClearSearch) {
-                            Icon(Icons.Default.Close, contentDescription = "مسح البحث")
+                            Icon(Icons.Default.Close, contentDescription = if (isEnglish) "Clear" else "مسح البحث")
                         }
                     }
                 },
@@ -264,7 +287,10 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "${ayah.surahName} | الآية ${ayah.numberInSurah}",
+                                    text = if (isEnglish)
+                                        "${ayah.surahName} | Verse ${ayah.numberInSurah}"
+                                    else
+                                        "${ayah.surahName} | الآية ${ayah.numberInSurah}",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
@@ -273,7 +299,7 @@ fun HomeScreen(
                     }
                     if (searchResults.isEmpty() && searchQuery.length >= 3) {
                         item {
-                            Text("لا توجد نتائج", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Text(if (isEnglish) "No results found" else "لا توجد نتائج", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -284,23 +310,23 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Button(onClick = onNew, modifier = Modifier.width(220.dp).height(50.dp)) { Text("بدء ختمة جديدة") }
+                    Button(onClick = onNew, modifier = Modifier.width(220.dp).height(50.dp)) { Text(if (isEnglish) "New Khatma" else "بدء ختمة جديدة") }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onContinue, modifier = Modifier.width(220.dp).height(50.dp)) { Text("متابعة القراءة") }
+                    Button(onClick = onContinue, modifier = Modifier.width(220.dp).height(50.dp)) { Text(if (isEnglish) "Continue Reading" else "متابعة القراءة") }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onOpenGoTo, modifier = Modifier.width(220.dp).height(50.dp)) { Text("انتقال إلى سورة/آية") }
+                    Button(onClick = onOpenGoTo, modifier = Modifier.width(220.dp).height(50.dp)) { Text(if (isEnglish) "Go to Surah / Ayah" else "انتقال إلى سورة/آية") }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onOpenBookmarks, modifier = Modifier.width(220.dp).height(50.dp)) { Text("العلامات المرجعية") }
+                    Button(onClick = onOpenBookmarks, modifier = Modifier.width(220.dp).height(50.dp)) { Text(if (isEnglish) "Bookmarks" else "العلامات المرجعية") }
 
                     Spacer(modifier = Modifier.height(40.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("وضع عدم الإزعاج التلقائي", fontWeight = FontWeight.Medium)
+                        Text(if (isEnglish) "Auto Do Not Disturb" else "وضع عدم الإزعاج التلقائي", fontWeight = FontWeight.Medium)
                         Spacer(modifier = Modifier.width(12.dp))
                         Switch(checked = isDndEnabled, onCheckedChange = onDndToggle)
                     }
                     if (isDndEnabled) {
-                        Text("(يُفعل أثناء القراءة)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                        Text(if (isEnglish) "(active while reading)" else "(يُفعل أثناء القراءة)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -319,6 +345,8 @@ fun ReadingScreen(
     initialAyahIndex: Int,
     isDndPreferenceOn: Boolean,
     scrollSpeed: Float,
+    fontSize: Float,
+    isEnglish: Boolean,
     onSpeedChange: (Float) -> Unit,
     onSurahChange: (Int) -> Unit,
     onSaveBookmark: (String, Int) -> Unit,
@@ -335,7 +363,7 @@ fun ReadingScreen(
             onBack()
         } else {
             lastBackPressTime = currentTime
-            Toast.makeText(context, "اضغط مرة أخرى للرجوع", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, if (isEnglish) "Press again to go back" else "اضغط مرة أخرى للرجوع", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -358,21 +386,20 @@ fun ReadingScreen(
         onPositionChange(firstVisibleIndex)
     }
 
-    // Adjust index for Bismillah (if present, it shifts indices by 1)
-    val adjustedIndex = if (surahNumber != 1 && surahNumber != 9)
-        (firstVisibleIndex - 1).coerceAtLeast(0)
-    else firstVisibleIndex
+    // List index = numberInSurah - 1 always (no separate Bismillah item in the list)
+    val adjustedIndex = firstVisibleIndex
 
     val currentAyah = ayahs.getOrNull(adjustedIndex)
     val surahName = ayahs.firstOrNull()?.surahName ?: ""
+    val englishSurahName = QuranRepository.getEnglishSurahName(surahNumber)
     val currentHizbQuarter = currentAyah?.hizbQuarter ?: ayahs.firstOrNull()?.hizbQuarter ?: 0
 
     // Notification for Hizb Quarter changes
     var lastHizbQuarter by remember { mutableIntStateOf(currentHizbQuarter) }
     LaunchedEffect(currentHizbQuarter) {
         if (currentHizbQuarter != lastHizbQuarter && currentHizbQuarter > 0) {
-            val text = StringUtils.getHizbNotificationText(currentHizbQuarter)
-            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+            val text = StringUtils.getHizbNotificationText(currentHizbQuarter, isEnglish)
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
         }
         lastHizbQuarter = currentHizbQuarter
     }
@@ -384,6 +411,13 @@ fun ReadingScreen(
 
     // --- User Interaction Detection ---
     var isUserTouching by remember { mutableStateOf(false) }
+    var scrollbarTargetIndex by remember { mutableIntStateOf(-1) }
+
+    LaunchedEffect(scrollbarTargetIndex) {
+        if (scrollbarTargetIndex >= 0) {
+            listState.scrollToItem(scrollbarTargetIndex)
+        }
+    }
 
     // Auto Scroll Logic
     LaunchedEffect(isAutoScrolling, scrollSpeed, isUserTouching) {
@@ -406,47 +440,48 @@ fun ReadingScreen(
 
     Scaffold(
         topBar = {
-            ReadingTopBar(
-                surahName = surahName,
-                hizbQuarter = currentHizbQuarter,
-                onBack = {
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastBackPressTime < 2000) {
-                        onBack()
-                    } else {
-                        lastBackPressTime = currentTime
-                        Toast.makeText(context, "اضغط مرة أخرى للرجوع", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onPrevSurah = { if (surahNumber > 1) onSurahChange(surahNumber - 1) },
-                onNextSurah = { if (surahNumber < 114) onSurahChange(surahNumber + 1) },
-                hasPrev = surahNumber > 1,
-                hasNext = surahNumber < 114,
-                onMenuClick = { showMenu = true }
-            )
+            Box {
+                ReadingTopBar(
+                    surahName = surahName,
+                    englishSurahName = englishSurahName,
+                    isEnglish = isEnglish,
+                    hizbQuarter = currentHizbQuarter,
+                    onBack = { onBack() },
+                    onPrevSurah = { if (surahNumber > 1) onSurahChange(surahNumber - 1) },
+                    onNextSurah = { if (surahNumber < 114) onSurahChange(surahNumber + 1) },
+                    hasPrev = surahNumber > 1,
+                    hasNext = surahNumber < 114,
+                    onMenuClick = { showMenu = true }
+                )
 
-            Box(modifier = Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                        .wrapContentSize(Alignment.TopEnd)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("حفظ علامة مرجعية") },
-                        onClick = { onSaveBookmark(surahName, firstVisibleIndex); showMenu = false }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(if (isAutoScrolling) "إيقاف التمرير" else "تمرير تلقائي") },
-                        onClick = { isAutoScrolling = !isAutoScrolling; showMenu = false }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("ضبط السرعة") },
-                        onClick = { showSpeedDialog = true; showMenu = false }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("الرئيسية") },
-                        onClick = { showMenu = false; onGoHome() }
-                    )
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (isEnglish) "Save Bookmark" else "حفظ علامة مرجعية") },
+                            onClick = { onSaveBookmark(surahName, firstVisibleIndex); showMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isAutoScrolling) (if (isEnglish) "Stop Scroll" else "إيقاف التمرير") else (if (isEnglish) "Auto Scroll" else "تمرير تلقائي")) },
+                            onClick = { isAutoScrolling = !isAutoScrolling; showMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isEnglish) "Adjust Speed" else "ضبط السرعة") },
+                            onClick = { showSpeedDialog = true; showMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isEnglish) "Home" else "الرئيسية") },
+                            onClick = { showMenu = false; onGoHome() }
+                        )
+                    }
                 }
             }
         }
@@ -475,8 +510,8 @@ fun ReadingScreen(
                     Text(
                         text = StringUtils.buildSingleAyahText(ayah.text, ayah.numberInSurah),
                         style = TextStyle(
-                            fontSize = 26.sp,
-                            lineHeight = 48.sp,
+                            fontSize = fontSize.sp,
+                            lineHeight = (fontSize * 1.8).sp,
                             textAlign = TextAlign.Center,
                             textDirection = TextDirection.Rtl,
                             color = MaterialTheme.colorScheme.onBackground
@@ -490,7 +525,7 @@ fun ReadingScreen(
                         Button(
                             onClick = { onSurahChange(surahNumber + 1) },
                             modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
-                        ) { Text("السورة التالية") }
+                        ) { Text(if (isEnglish) "Next Surah" else "السورة التالية") }
                     }
                 }
             }
@@ -501,22 +536,44 @@ fun ReadingScreen(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 4.dp, top = 16.dp, bottom = 16.dp)
-                        .width(4.dp)
-                        .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                        .width(30.dp) // Wider touch area
+                        .fillMaxHeight()
+                        .pointerInput(totalItems) {
+                            detectDragGestures(
+                                onDragStart = { isUserTouching = true },
+                                onDragEnd = { isUserTouching = false },
+                                onDragCancel = { isUserTouching = false }
+                            ) { change, _ ->
+                                val positionY = change.position.y
+                                val height = size.height.toFloat()
+                                if (height > 0) {
+                                    val ratio = (positionY / height).coerceIn(0f, 1f)
+                                    scrollbarTargetIndex = (ratio * totalItems).toInt().coerceAtMost(totalItems - 1)
+                                }
+                            }
+                        }
                 ) {
-                    val topWeight = firstVisibleIndex.toFloat()
-                    val thumbWeight = visibleItemsCount.toFloat()
-                    val bottomWeight = (totalItems.toFloat() - topWeight - thumbWeight).coerceAtLeast(0.01f)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                    ) {
+                        val topWeight = firstVisibleIndex.toFloat()
+                        val thumbWeight = visibleItemsCount.toFloat()
+                        val bottomWeight = (totalItems.toFloat() - topWeight - thumbWeight).coerceAtLeast(0.01f)
 
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        if (topWeight > 0) Spacer(modifier = Modifier.weight(topWeight))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(thumbWeight)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
-                        )
-                        if (bottomWeight > 0) Spacer(modifier = Modifier.weight(bottomWeight))
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            if (topWeight > 0) Spacer(modifier = Modifier.weight(topWeight))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(thumbWeight)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+                            )
+                            if (bottomWeight > 0) Spacer(modifier = Modifier.weight(bottomWeight))
+                        }
                     }
                 }
             }
@@ -527,6 +584,8 @@ fun ReadingScreen(
 @Composable
 fun ReadingTopBar(
     surahName: String,
+    englishSurahName: String,
+    isEnglish: Boolean,
     hizbQuarter: Int,
     onBack: () -> Unit,
     onPrevSurah: () -> Unit,
@@ -535,38 +594,76 @@ fun ReadingTopBar(
     hasNext: Boolean,
     onMenuClick: () -> Unit
 ) {
-    Surface(tonalElevation = 2.dp, color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(surahName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text(
-                    text = StringUtils.getHizbArabicText(hizbQuarter),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPrevSurah, enabled = hasPrev) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "السابق", tint = if (hasPrev) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f))
+    Surface(
+        tonalElevation = 3.dp,
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = if (isEnglish) "Back" else "رجوع")
                 }
-                IconButton(onClick = onNextSurah, enabled = hasNext) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "التالي", tint = if (hasNext) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f))
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = surahName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 19.sp,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                    
+                    if (hizbQuarter > 0) {
+                        Text(
+                            text = StringUtils.getHizbText(hizbQuarter, isEnglish),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Normal,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
+                        )
+                    }
                 }
-                IconButton(onClick = onMenuClick) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "القائمة")
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onPrevSurah, enabled = hasPrev) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = if (isEnglish) "Previous" else "السابق",
+                            tint = if (hasPrev) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    IconButton(onClick = onNextSurah, enabled = hasNext) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = if (isEnglish) "Next" else "التالي",
+                            tint = if (hasNext) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.MoreVert, contentDescription = if (isEnglish) "Menu" else "القائمة")
+                    }
                 }
             }
         }
@@ -574,7 +671,15 @@ fun ReadingTopBar(
 }
 
 @Composable
-fun AboutDialog(onDismiss: () -> Unit) {
+fun SettingsDialog(
+    isDarkMode: Boolean,
+    onDarkModeToggle: (Boolean) -> Unit,
+    fontSize: Float,
+    onFontSizeChange: (Float) -> Unit,
+    isEnglish: Boolean,
+    onLanguageToggle: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
     val context = LocalContext.current
     val uriHandler = remember { { url: String ->
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -583,70 +688,132 @@ fun AboutDialog(onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("حول التطبيق") },
+        title = { Text(if (isEnglish) "Settings" else "الإعدادات", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "تطبيق القرآن الكريم بسيط ومفتوح المصدر، يهدف لتوفير تجربة قراءة مريحة مع ميزات التمرير التلقائي والعلامات المرجعية",
-                    textAlign = TextAlign.Center,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("Salmane Baba : المطور ", fontWeight = FontWeight.Bold)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Dark Mode Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(if (isEnglish) "Dark Mode" else "الوضع الداكن")
+                    Switch(checked = isDarkMode, onCheckedChange = onDarkModeToggle)
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "salmanebaba@outlook.com",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { 
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:salmanebaba@outlook.com")
-                        }
-                        context.startActivity(intent)
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Language Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(if (isEnglish) "Language" else "اللغة")
+                        Text(
+                            text = if (isEnglish) "English" else "عربي",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
                     }
-                )
-                
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("ع", fontSize = 14.sp, color = if (!isEnglish) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                        Switch(
+                            checked = isEnglish,
+                            onCheckedChange = onLanguageToggle,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        Text("EN", fontSize = 14.sp, color = if (isEnglish) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Font Size Control
+                Text(if (isEnglish) "Font Size: ${fontSize.toInt()}" else "حجم الخط: ${fontSize.toInt()}")
+                Slider(
+                    value = fontSize,
+                    onValueChange = onFontSizeChange,
+                    valueRange = 18f..48f,
+                    steps = 30
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // About section at the footer of settings
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "GitHub",
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline,
-                        modifier = Modifier.clickable { uriHandler("https://github.com/salmanebaba") }
+                        text = "تطبيق القرآن الكريم بسيط ومفتوح المصدر، يهدف لتوفير تجربة قراءة مريحة مع ميزات التمرير التلقائي والعلامات المرجعية",
+                        textAlign = TextAlign.Center,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Salmane Baba : المطور ", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+
                     Text(
-                        text = "LinkedIn",
+                        text = "salmanebaba@outlook.com",
                         color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline,
-                        modifier = Modifier.clickable { uriHandler("https://linkedin.com/in/salmanebaba") }
+                        fontSize = 12.sp,
+                        modifier = Modifier.clickable {
+                            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:salmanebaba@outlook.com")
+                            }
+                            context.startActivity(intent)
+                        }
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        Text(
+                            text = "GitHub",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier.clickable { uriHandler("https://github.com/salmanebaba") }
+                        )
+                        Text(
+                            text = "LinkedIn",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier.clickable { uriHandler("https://linkedin.com/in/salmanebaba") }
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("إغلاق") }
+            TextButton(onClick = onDismiss) { Text(if (isEnglish) "Close" else "إغلاق") }
         }
     )
 }
 
 @Composable
-fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int, Int) -> Unit) {
+fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int, Int) -> Unit, isEnglish: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedSurah by remember { mutableStateOf(surahList.firstOrNull() ?: SurahMetadata(1, "Al-Fatihah", 7)) }
+    var selectedSurah by remember { mutableStateOf(surahList.firstOrNull() ?: SurahMetadata(1, "Al-Fatihah", "", 7)) }
     var ayahInput by remember { mutableStateOf("1") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("الذهاب إلى آية") },
+        title = { Text(if (isEnglish) "Go to Ayah" else "الذهاب إلى آية") },
         text = {
             Column {
                 Box {
                     OutlinedTextField(
-                        value = "${selectedSurah.number}. ${selectedSurah.name}",
+                        value = "${selectedSurah.number}. ${if (isEnglish && selectedSurah.englishName.isNotEmpty()) selectedSurah.englishName else selectedSurah.name}",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("اختر السورة") },
+                        label = { Text(if (isEnglish) "Select Surah" else "اختر السورة") },
                         trailingIcon = {
                             IconButton(onClick = { expanded = true }) {
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -661,7 +828,16 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
                     ) {
                         surahList.forEach { surah ->
                             DropdownMenuItem(
-                                text = { Text("${surah.number}. ${surah.name}") },
+                                text = {
+                                    if (isEnglish && surah.englishName.isNotEmpty()) {
+                                        Column {
+                                            Text("${surah.number}. ${surah.englishName}")
+                                            Text(surah.name, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                                        }
+                                    } else {
+                                        Text("${surah.number}. ${surah.name}")
+                                    }
+                                },
                                 onClick = {
                                     selectedSurah = surah
                                     expanded = false
@@ -674,7 +850,7 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
                 OutlinedTextField(
                     value = ayahInput,
                     onValueChange = { ayahInput = it.filter { c -> c.isDigit() } },
-                    label = { Text("رقم الآية (1-${selectedSurah.ayahCount})") },
+                    label = { Text(if (isEnglish) "Ayah number (1-${selectedSurah.ayahCount})" else "رقم الآية (1-${selectedSurah.ayahCount})") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -684,10 +860,10 @@ fun GoToDialog(surahList: List<SurahMetadata>, onDismiss: () -> Unit, onGo: (Int
             Button(onClick = {
                 val a = ayahInput.toIntOrNull() ?: 1
                 onGo(selectedSurah.number, a.coerceIn(1, selectedSurah.ayahCount))
-            }) { Text("ذهاب") }
+            }) { Text(if (isEnglish) "Go" else "ذهاب") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("إلغاء") }
+            TextButton(onClick = onDismiss) { Text(if (isEnglish) "Cancel" else "إلغاء") }
         }
     )
 }
@@ -737,7 +913,8 @@ fun BookmarksDialog(
     onDismiss: () -> Unit,
     onSelect: (Bookmark) -> Unit,
     onDelete: (Bookmark) -> Unit,
-    onRename: (Bookmark, String) -> Unit
+    onRename: (Bookmark, String) -> Unit,
+    isEnglish: Boolean = false
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
     var bookmarkToRename by remember { mutableStateOf<Bookmark?>(null) }
@@ -746,12 +923,12 @@ fun BookmarksDialog(
     if (bookmarkToRename != null) {
         AlertDialog(
             onDismissRequest = { bookmarkToRename = null },
-            title = { Text("إعادة تسمية العلامة") },
+            title = { Text(if (isEnglish) "Rename Bookmark" else "إعادة تسمية العلامة") },
             text = {
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
-                    label = { Text("الاسم الجديد") },
+                    label = { Text(if (isEnglish) "New name" else "الاسم الجديد") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -760,17 +937,17 @@ fun BookmarksDialog(
                 TextButton(onClick = {
                     bookmarkToRename?.let { onRename(it, newName) }
                     bookmarkToRename = null
-                }) { Text("حفظ") }
+                }) { Text(if (isEnglish) "Save" else "حفظ") }
             },
             dismissButton = {
-                TextButton(onClick = { bookmarkToRename = null }) { Text("إلغاء") }
+                TextButton(onClick = { bookmarkToRename = null }) { Text(if (isEnglish) "Cancel" else "إلغاء") }
             }
         )
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("العلامات المرجعية") },
+        title = { Text(if (isEnglish) "Bookmarks" else "العلامات المرجعية") },
         text = {
             LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
                 items(bookmarks, key = { it.timestamp }) { bookmark ->
@@ -785,7 +962,10 @@ fun BookmarksDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(bookmark.surahName, fontWeight = FontWeight.Bold)
                             Text(
-                                "الآية ${bookmark.ayahIndex + 1} • ${dateFormat.format(Date(bookmark.timestamp))}",
+                                if (isEnglish)
+                                    "Ayah ${bookmark.ayahIndex + 1} • ${dateFormat.format(Date(bookmark.timestamp))}"
+                                else
+                                    "الآية ${bookmark.ayahIndex + 1} • ${dateFormat.format(Date(bookmark.timestamp))}",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -795,19 +975,19 @@ fun BookmarksDialog(
                                 bookmarkToRename = bookmark
                                 newName = bookmark.surahName
                             }) {
-                                Icon(Icons.Default.Edit, contentDescription = "تعديل", tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+                                Icon(Icons.Default.Edit, contentDescription = if (isEnglish) "Rename" else "تعديل", tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                             }
                             IconButton(onClick = { onDelete(bookmark) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "حذف", tint = Color.Red.copy(alpha = 0.6f))
+                                Icon(Icons.Default.Delete, contentDescription = if (isEnglish) "Delete" else "حذف", tint = Color.Red.copy(alpha = 0.6f))
                             }
                         }
                     }
                     HorizontalDivider()
                 }
-                if (bookmarks.isEmpty()) item { Text("لا توجد علامات مرجعية بعد.") }
+                if (bookmarks.isEmpty()) item { Text(if (isEnglish) "No bookmarks yet." else "لا توجد علامات مرجعية بعد.") }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("إغلاق") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(if (isEnglish) "Close" else "إغلاق") } }
     )
 }
 
@@ -940,7 +1120,23 @@ object StringUtils {
         }
     }
 
-    fun getHizbArabicText(quarterIndex: Int): String {
+    fun formatRelativeTimeEn(timestamp: Long): String {
+        if (timestamp == 0L) return ""
+        val diff = System.currentTimeMillis() - timestamp
+        val seconds = diff / 1000
+        val minutes = seconds / 60
+        val hours = minutes / 60
+        val days = hours / 24
+
+        return when {
+            days > 0 -> "$days day${if (days > 1) "s" else ""} ago"
+            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} ago"
+            minutes > 0 -> "$minutes min ago"
+            else -> "just now"
+        }
+    }
+
+    fun getHizbText(quarterIndex: Int, isEnglish: Boolean): String {
         if (quarterIndex == 0) return ""
         val hizb = ((quarterIndex - 1) / 4) + 1
         val remainder = (quarterIndex - 1) % 4
@@ -950,19 +1146,33 @@ object StringUtils {
             3 -> "3/4"
             else -> ""
         }
-        return if (fraction.isNotEmpty()) " ح $hizb | $fraction" else "$hizb ح"
+        return if (isEnglish) {
+            if (fraction.isNotEmpty()) "Hizb $hizb | $fraction" else "Hizb $hizb"
+        } else {
+            if (fraction.isNotEmpty()) " ح $hizb | $fraction" else "$hizb ح"
+        }
     }
 
-    fun getHizbNotificationText(quarterIndex: Int): String {
+    fun getHizbNotificationText(quarterIndex: Int, isEnglish: Boolean): String {
         if (quarterIndex == 0) return ""
         val hizb = ((quarterIndex - 1) / 4) + 1
         val remainder = (quarterIndex - 1) % 4
-        return when (remainder) {
-            0 -> "بداية الحزب $hizb"
-            1 -> "الربع الأول - الحزب $hizb"
-            2 -> "النصف - الحزب $hizb"
-            3 -> "الربع الثالث - الحزب $hizb"
-            else -> ""
+        return if (isEnglish) {
+            when (remainder) {
+                0 -> "Start of Hizb $hizb"
+                1 -> "First Quarter - Hizb $hizb"
+                2 -> "Half - Hizb $hizb"
+                3 -> "Third Quarter - Hizb $hizb"
+                else -> ""
+            }
+        } else {
+            when (remainder) {
+                0 -> "بداية الحزب $hizb"
+                1 -> "الربع الأول - الحزب $hizb"
+                2 -> "النصف - الحزب $hizb"
+                3 -> "الربع الثالث - الحزب $hizb"
+                else -> ""
+            }
         }
     }
 

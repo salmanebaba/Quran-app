@@ -1,4 +1,4 @@
-package com.salmanebaba.quran
+package com.salmane.quran
 
 import com.google.gson.annotations.SerializedName
 
@@ -14,6 +14,7 @@ data class QuranDataWrapper(
 data class Surah(
     val number: Int,
     val name: String, // Arabic name like "سورة الفاتحة"
+    @SerializedName("englishName") val englishName: String = "",
     val ayahs: List<Ayah>
 )
 
@@ -31,7 +32,7 @@ data class Ayah(
     @SerializedName("normalizedText") var normalizedText: String = ""
 )
 
-data class SurahMetadata(val number: Int, val name: String, val ayahCount: Int)
+data class SurahMetadata(val number: Int, val name: String, val englishName: String = "", val ayahCount: Int)
 
 data class Bookmark(
     @SerializedName("surahName") val surahName: String, @SerializedName("surahNumber") val surahNumber: Int,

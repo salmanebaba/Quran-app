@@ -1,4 +1,4 @@
-package com.salmanebaba.quran
+package com.salmane.quran
 
 import android.app.Application
 import android.content.Context
@@ -18,7 +18,11 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     var targetScrollIndex by mutableIntStateOf(0)
     var isDataLoaded by mutableStateOf(false)
     var isDndPref by mutableStateOf(prefs.getBoolean("dnd_pref", false))
+    var isDarkMode by mutableStateOf(prefs.getBoolean("dark_mode", false))
+    var isEnglish by mutableStateOf(prefs.getBoolean("is_english", false))
+    var fontSize by mutableStateOf(prefs.getFloat("font_size", 26f))
     var showBookmarksDialog by mutableStateOf(false)
+    var showSettingsDialog by mutableStateOf(false)
     var showGoToDialog by mutableStateOf(false)
     var bookmarksList by mutableStateOf(emptyList<Bookmark>())
 
@@ -95,12 +99,9 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun onSearchResultClick(ayah: Ayah) {
         currentSurah = ayah.surahNumber
         loadSurahContent(ayah.surahNumber)
-        // Adjust for Bismillah if present (Surahs other than 1 and 9)
-        targetScrollIndex = if (ayah.surahNumber != 1 && ayah.surahNumber != 9) {
-            ayah.numberInSurah
-        } else {
-            ayah.numberInSurah - 1
-        }
+        // The LazyColumn renders ayahs directly from the list (no separate Bismillah item),
+        // so list index is always numberInSurah - 1 for every surah.
+        targetScrollIndex = ayah.numberInSurah - 1
         activeBookmarkTimestamp = null
         saveLastReadPosition(ayah.surahNumber, targetScrollIndex)
     }
@@ -207,5 +208,20 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun updateScrollSpeed(newSpeed: Float) {
         scrollSpeed = newSpeed
         prefs.edit().putFloat("scroll_speed", newSpeed).apply()
+    }
+
+    fun toggleDarkMode(enabled: Boolean) {
+        isDarkMode = enabled
+        prefs.edit().putBoolean("dark_mode", enabled).apply()
+    }
+
+    fun toggleLanguage(english: Boolean) {
+        isEnglish = english
+        prefs.edit().putBoolean("is_english", english).apply()
+    }
+
+    fun updateFontSize(newSize: Float) {
+        fontSize = newSize
+        prefs.edit().putFloat("font_size", newSize).apply()
     }
 }

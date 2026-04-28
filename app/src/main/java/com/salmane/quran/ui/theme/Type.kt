@@ -1,4 +1,4 @@
-package com.salmanebaba.quran.ui.theme
+package com.salmane.quran.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
