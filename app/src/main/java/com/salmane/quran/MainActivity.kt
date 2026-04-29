@@ -244,7 +244,7 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-            Text(if (isEnglish) "The Holy Quran" else "القرآن الكريم", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("القرآن الكريم", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
 
             Spacer(modifier = Modifier.height(24.dp))
