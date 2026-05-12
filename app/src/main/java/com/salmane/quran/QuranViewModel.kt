@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 class QuranViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("SimpleQuranData", Context.MODE_PRIVATE)
@@ -56,10 +57,10 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         lastEntryTimestamp = lastSaved
 
         // Update the display persistent storage so it stays valid for the whole current session
-        prefs.edit().putLong("last_entry_timestamp_display", lastSaved).apply()
+        prefs.edit { putLong("last_entry_timestamp_display", lastSaved) }
 
         // Save current time as the "internal" one for the NEXT app launch
-        prefs.edit().putLong("last_entry_timestamp_internal", System.currentTimeMillis()).apply()
+        prefs.edit { putLong("last_entry_timestamp_internal", System.currentTimeMillis()) }
     }
 
 
@@ -125,13 +126,13 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         if (shouldEnable) {
             if (DndHelper.isPermissionGranted(getApplication())) {
                 isDndPref = true
-                prefs.edit().putBoolean("dnd_pref", true).apply()
+                prefs.edit { putBoolean("dnd_pref", true) }
             } else {
                 DndHelper.requestPermission(getApplication())
             }
         } else {
             isDndPref = false
-            prefs.edit().putBoolean("dnd_pref", false).apply()
+            prefs.edit { putBoolean("dnd_pref", false) }
         }
     }
 
@@ -174,10 +175,10 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveLastReadPosition(surah: Int, index: Int) {
-        prefs.edit()
-            .putInt("last_visit_surah", surah)
-            .putInt("last_visit_index", index)
-            .apply()
+        prefs.edit {
+            putInt("last_visit_surah", surah)
+                .putInt("last_visit_index", index)
+        }
     }
 
     fun renameBookmark(bookmark: Bookmark, newName: String) {
@@ -207,21 +208,21 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateScrollSpeed(newSpeed: Float) {
         scrollSpeed = newSpeed
-        prefs.edit().putFloat("scroll_speed", newSpeed).apply()
+        prefs.edit { putFloat("scroll_speed", newSpeed) }
     }
 
     fun toggleDarkMode(enabled: Boolean) {
         isDarkMode = enabled
-        prefs.edit().putBoolean("dark_mode", enabled).apply()
+        prefs.edit { putBoolean("dark_mode", enabled) }
     }
 
     fun toggleLanguage(english: Boolean) {
         isEnglish = english
-        prefs.edit().putBoolean("is_english", english).apply()
+        prefs.edit { putBoolean("is_english", english) }
     }
 
     fun updateFontSize(newSize: Float) {
         fontSize = newSize
-        prefs.edit().putFloat("font_size", newSize).apply()
+        prefs.edit { putFloat("font_size", newSize) }
     }
 }

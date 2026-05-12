@@ -66,6 +66,8 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.content.edit
+import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -391,7 +393,6 @@ fun ReadingScreen(
 
     val currentAyah = ayahs.getOrNull(adjustedIndex)
     val surahName = ayahs.firstOrNull()?.surahName ?: ""
-    val englishSurahName = QuranRepository.getEnglishSurahName(surahNumber)
     val currentHizbQuarter = currentAyah?.hizbQuarter ?: ayahs.firstOrNull()?.hizbQuarter ?: 0
 
     // Notification for Hizb Quarter changes
@@ -443,7 +444,6 @@ fun ReadingScreen(
             Box {
                 ReadingTopBar(
                     surahName = surahName,
-                    englishSurahName = englishSurahName,
                     isEnglish = isEnglish,
                     hizbQuarter = currentHizbQuarter,
                     onBack = { onBack() },
@@ -584,7 +584,6 @@ fun ReadingScreen(
 @Composable
 fun ReadingTopBar(
     surahName: String,
-    englishSurahName: String,
     isEnglish: Boolean,
     hizbQuarter: Int,
     onBack: () -> Unit,
@@ -682,7 +681,7 @@ fun SettingsDialog(
 ) {
     val context = LocalContext.current
     val uriHandler = remember { { url: String ->
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         context.startActivity(intent)
     } }
 
@@ -764,7 +763,7 @@ fun SettingsDialog(
                         fontSize = 12.sp,
                         modifier = Modifier.clickable {
                             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:salmanebaba@outlook.com")
+                                data = "mailto:salmanebaba@outlook.com".toUri()
                             }
                             context.startActivity(intent)
                         }
@@ -1070,7 +1069,7 @@ object BookmarkHelper {
         }
 
         list.add(0, bookmark)
-        prefs.edit().putString("bookmarks_list", gson.toJson(list)).apply()
+        prefs.edit { putString("bookmarks_list", gson.toJson(list)) }
     }
 
     fun deleteBookmark(context: Context, bookmark: Bookmark) {
@@ -1078,7 +1077,7 @@ object BookmarkHelper {
         val gson = Gson()
         val list = getBookmarks(context).toMutableList()
         list.removeAll { it.timestamp == bookmark.timestamp }
-        prefs.edit().putString("bookmarks_list", gson.toJson(list)).apply()
+        prefs.edit { putString("bookmarks_list", gson.toJson(list)) }
     }
 
     fun renameBookmark(context: Context, bookmark: Bookmark, newName: String) {
@@ -1088,7 +1087,7 @@ object BookmarkHelper {
         val index = list.indexOfFirst { it.timestamp == bookmark.timestamp }
         if (index != -1) {
             list[index] = list[index].copy(surahName = newName)
-            prefs.edit().putString("bookmarks_list", gson.toJson(list)).apply()
+            prefs.edit { putString("bookmarks_list", gson.toJson(list)) }
         }
     }
 
@@ -1098,7 +1097,7 @@ object BookmarkHelper {
         return try {
             val type = object : TypeToken<List<Bookmark>>() {}.type
             Gson().fromJson(json, type) ?: emptyList()
-        } catch (e: Exception) { emptyList() }
+        } catch (_: Exception) { emptyList() }
     }
 }
 
